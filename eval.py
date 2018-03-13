@@ -13,55 +13,92 @@ from model import build_graph, batch_size
 
 os.environ["CUDA_VISIBLE_DEVICES"]="2"
 
-embedding_size=8
-num_conv_filters=None
+configs={
+    'oh': {'embed': None, 'conv':None, 'rnn_depth':3},
+    'embed_4': {'embed': 4, 'conv':None, 'rnn_depth':3},
+    'embed_4_conv4': {'embed': 4, 'conv':4, 'rnn_depth':3}
+    # 'embed_8_conv8': {'embed': 8, 'conv':8, 'rnn_depth':2}
+    # 'embed_4_conv4_depth1': {'embed': 4, 'conv':4, 'rnn_depth':1},
+    # 'embed_4_conv4_depth2': {'embed': 4, 'conv':4, 'rnn_depth':2},
+    # 'oh_depth1': {'embed': None, 'conv':None, 'rnn_depth':1},
+    # 'oh_depth2': {'embed': None, 'conv':None, 'rnn_depth':2}
+}
+num_attempts = 3
+to_restore=False
+results={name:{} for name in configs.keys()}
 
-x,y,opt, accuracy, y_hat, loss, embedding_encoder,dropout_active = build_graph(num_conv_filters=num_conv_filters,embedding_size=embedding_size)
+if False:
+    for model_id, cfg in configs.items():
+        for attempt in range(0,num_attempts):
+            tf.reset_default_graph()
+            x,y,opt, accuracy, y_hat, loss, embedding_encoder,dropout_active = build_graph(cfg['embed'], cfg['conv'], cfg['rnn_depth'])
+            chkpt_path='./models/'+ model_id +'-'+str(attempt)
+            gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.95)
+            with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options,log_device_placement=False)) as sess:
+                saver = tf.train.Saver()
 
+                saver.restore(sess, chkpt_path+'/model.checkpoint')
+                best_dev_acc=0
+                print('Final model evaluation: ', model_id, attempt)
+
+                # train_accs =[]
+                # for j in range(len(train_data[:2000])//batch_size):
+                #     batch_xs, batch_ys = get_batch(train_data, j, batch_size)
+                #     train_acc,pred= sess.run([accuracy,y_hat], feed_dict={x:batch_xs, y:batch_ys})
+                #     train_accs.append(train_acc)
+                # print('Train: ', np.mean(train_accs) )
+
+                dev_accs =[]
+                dev_preds=[]
+                dev_gold=[]
+                for j in range(len(dev_data)//batch_size):
+                    batch_xs, batch_ys = get_batch(dev_data, j, batch_size)
+                    dev_acc,dev_pred= sess.run([accuracy,y_hat], feed_dict={x:batch_xs, y:batch_ys})
+                    dev_accs.append(dev_acc)
+                    dev_gold.extend(batch_ys)
+                    # print(dev_pred.tolist())
+                    # exit()
+                    dev_preds.extend(dev_pred.tolist())
+                print('Dev: ', np.mean(dev_accs) )
+
+test_data = dev_data
+
+model_id='embed_4'
+attempt=2
+cfg = configs[model_id]
 gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.95)
+tf.reset_default_graph()
 with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options,log_device_placement=False)) as sess:
+    chkpt_path='./models/'+ model_id +'-'+str(attempt)
+    x,y,opt, accuracy, y_hat, loss, embedding_encoder,dropout_active = build_graph(cfg['embed'], cfg['conv'], cfg['rnn_depth'])
+
     saver = tf.train.Saver()
 
-    saver.restore(sess, './model/model.checkpoint')
+    saver.restore(sess, chkpt_path+ '/model.checkpoint')
     best_dev_acc=0
     print('Final model evaluation:')
 
-    # train_accs =[]
-    # for j in range(len(train_data[:2000])//batch_size):
-    #     batch_xs, batch_ys = get_batch(train_data, j, batch_size)
-    #     train_acc,pred= sess.run([accuracy,y_hat], feed_dict={x:batch_xs, y:batch_ys})
-    #     train_accs.append(train_acc)
-    # print('Train: ', np.mean(train_accs) )
-
-    dev_accs =[]
-    dev_preds=[]
-    dev_gold=[]
-    for j in range(len(dev_data)//batch_size):
-        batch_xs, batch_ys = get_batch(dev_data, j, batch_size)
-        dev_acc,dev_pred= sess.run([accuracy,y_hat], feed_dict={x:batch_xs, y:batch_ys})
-        dev_accs.append(dev_acc)
-        dev_gold.extend(batch_ys)
-        # print(dev_pred.tolist())
-        # exit()
-        dev_preds.extend(dev_pred.tolist())
-    print('Dev: ', np.mean(dev_accs) )
 
     # Only check the test set after model selection!
     test_accs =[]
+    test_preds=[]
+    test_gold = []
     for j in range(len(test_data)//batch_size):
         batch_xs, batch_ys = get_batch(test_data, j, batch_size)
         test_acc,test_pred= sess.run([accuracy,y_hat], feed_dict={x:batch_xs, y:batch_ys})
         test_accs.append(test_acc)
+        test_preds.extend(test_pred.tolist())
+        test_gold.extend(batch_ys)
     print('Test: ' ,np.mean(test_accs) )
 
-    dev_preds=np.asarray(dev_preds)
+    test_preds=np.asarray(test_preds)
 
 
     fpr = dict()
     tpr = dict()
     roc_auc = dict()
     for i in range(num_classes):
-        fpr[i], tpr[i], _ = roc_curve(np.equal(dev_gold,i), dev_preds[:, i])
+        fpr[i], tpr[i], _ = roc_curve(np.equal(test_gold,i), test_preds[:, i])
         roc_auc[i] = auc(fpr[i], tpr[i])
 
     plt.figure()
@@ -74,14 +111,14 @@ with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options,log_device_placeme
     plt.ylim([0.0, 1.05])
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
-    plt.title('Receiver operating characteristic example')
+    # plt.title('Receiver operating characteristic example')
     plt.legend(loc="lower right")
     # plt.show()
 
     import itertools
     plt.figure()
-    cm=confusion_matrix(dev_gold, np.argmax(dev_preds,axis=1))
-    plt.imshow(cm)
+    cm=confusion_matrix(test_gold, np.argmax(test_preds,axis=1))
+    plt.imshow(cm, cmap='Oranges')
     tick_marks = np.arange(num_classes)
     plt.xticks(tick_marks, [seq_classes_rev[c] for c in range(num_classes)], rotation=45)
     plt.yticks(tick_marks, [seq_classes_rev[c] for c in range(num_classes)])
@@ -95,7 +132,7 @@ with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options,log_device_placeme
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
 
-    if embedding_size is not None:
+    if cfg['embed'] is not None:
         def plot_with_labels(low_dim_embs, labels, filename):
           assert low_dim_embs.shape[0] >= len(labels), 'More labels than embeddings'
           plt.figure()  # in inches

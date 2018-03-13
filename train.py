@@ -13,24 +13,28 @@ from data_helpers import *
 from model import build_graph, num_epochs, batch_size
 
 
-os.environ["CUDA_VISIBLE_DEVICES"]="2"
+os.environ["CUDA_VISIBLE_DEVICES"]="3"
 
 configs={
-    'oh': {'embed': None, 'conv':None},
-    'embed_4': {'embed': 4, 'conv':None},
-    'embed_4_conv4': {'embed': 4, 'conv':4},
-    'embed_8_conv8': {'embed': 8, 'conv':8}
+    'oh': {'embed': None, 'conv':None, 'rnn_depth':3},
+    'embed_4': {'embed': 4, 'conv':None, 'rnn_depth':3},
+    'embed_4_conv4': {'embed': 4, 'conv':4, 'rnn_depth':3}
+    'embed_8_conv8': {'embed': 8, 'conv':8, 'rnn_depth':2}
+    # 'embed_4_conv4_depth1': {'embed': 4, 'conv':4, 'rnn_depth':1},
+    # 'embed_4_conv4_depth2': {'embed': 4, 'conv':4, 'rnn_depth':2},
+    # 'oh_depth1': {'embed': None, 'conv':None, 'rnn_depth':1},
+    # 'oh_depth2': {'embed': None, 'conv':None, 'rnn_depth':2}
 }
 num_attempts = 3
 to_restore=False
 results={name:{} for name in configs.keys()}
 
 for model_id, cfg in configs.items():
-    for attempt in range(num_attempts):
+    for attempt in range(0,num_attempts):
         print('Training: '+ model_id + ' #'+str(attempt))
         tf.reset_default_graph()
 
-        x,y,opt, accuracy, y_hat, loss, embedding_encoder,dropout_active = build_graph(cfg['embed'], cfg['conv'])
+        x,y,opt, accuracy, y_hat, loss, embedding_encoder,dropout_active = build_graph(cfg['embed'], cfg['conv'], cfg['rnn_depth'])
 
         chkpt_path='./models/'+ model_id +'-'+str(attempt)
 

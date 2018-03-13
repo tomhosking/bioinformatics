@@ -27,17 +27,16 @@ def lrelu(x, alpha=0.1):
 # model params
 num_epochs=12
 learning_rate=0.0001
-batch_size=8
+batch_size=16
 fully_connected_hidden_units=64
 num_units = 64
-rnn_depth = 3
 cell_type = 'GRU'
 dropout_rate=0.2
 
 to_restore=True
 do_training = False
 
-def build_graph(embedding_size=None, num_conv_filters=None):
+def build_graph(embedding_size=None, num_conv_filters=None, rnn_depth=2):
 
     # create variables
     W_h1 = tf.get_variable('W_h1', [num_units*2,fully_connected_hidden_units], dtype=tf.float32, initializer=tf.contrib.layers.xavier_initializer())
