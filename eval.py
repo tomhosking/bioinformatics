@@ -11,6 +11,8 @@ import matplotlib.pyplot as plt
 from data_helpers import *
 from model import build_graph, batch_size
 
+
+
 os.environ["CUDA_VISIBLE_DEVICES"]="2"
 
 configs={
@@ -93,6 +95,17 @@ with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options,log_device_placeme
 
     test_preds=np.asarray(test_preds)
 
+    # eval blind data
+
+    classes_pretty={0:'Cytosolic', 1:'Mitochondrial', 2:'Nuclear', 3:'Secreted'}
+
+    batch_xs,_ = get_batch(blind_data, 0, len(blind_data))
+    test_pred= sess.run(y_hat, feed_dict={x:batch_xs})
+    pred_dict = {blind_data[i][1]:test_pred[i] for i in range(len(blind_data))}
+    print('Seq. Id & Predicted class & Prediction probability \\\\ \n\hline')
+    for seq,probs in pred_dict.items():
+        print(seq, ' & ',classes_pretty[np.argmax(probs)], ' & ', "{:0.3f}".format(np.amax(probs)) , ' \\\\')
+
 
     fpr = dict()
     tpr = dict()
@@ -114,6 +127,23 @@ with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options,log_device_placeme
     # plt.title('Receiver operating characteristic example')
     plt.legend(loc="lower right")
     # plt.show()
+
+    # plt.figure()
+    # lw = 2
+    # for c in range(num_classes):
+    #     plt.plot(fpr[c], tpr[c],
+    #          lw=lw, label='{:} (area = {:0.2f})'.format( seq_classes_rev[c], roc_auc[c]))
+    # plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+    # plt.xlim([0.0, 0.01])
+    # plt.ylim([0.0, 1.05])
+    # plt.xlabel('False Positive Rate')
+    # plt.ylabel('True Positive Rate')
+    # # plt.title('Receiver operating characteristic example')
+    # plt.legend(loc="lower right")
+    # # plt.show()
+    #
+    # print(fpr[1])
+    # print(tpr[1])
 
     import itertools
     plt.figure()
@@ -137,14 +167,16 @@ with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options,log_device_placeme
           assert low_dim_embs.shape[0] >= len(labels), 'More labels than embeddings'
           plt.figure()  # in inches
           for i, label in enumerate(labels):
-            x, y = low_dim_embs[i, :]
-            plt.scatter(x, y)
-            plt.annotate(label,
-                         xy=(x, y),
-                         xytext=(5, 2),
-                         textcoords='offset points',
-                         ha='right',
-                         va='bottom')
+              if label is not '_':
+                x, y = low_dim_embs[i, :]
+                plt.scatter(x, y)
+                plt.annotate(label,
+                             xy=(x, y),
+                             xytext=(5, 2),
+                             textcoords='offset points',
+                             ha='right',
+                             va='bottom',
+                             fontsize='x-large')
 
           # plt.savefig(filename)
 
