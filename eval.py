@@ -56,7 +56,7 @@ if False:
                 dev_preds=[]
                 dev_gold=[]
                 for j in range(len(dev_data)//batch_size):
-                    batch_xs, batch_ys = get_batch(dev_data, j, batch_size)
+                    batch_xs, batch_ys = get_batch(dev_data, j*batch_size, batch_size)
                     dev_acc,dev_pred= sess.run([accuracy,y_hat], feed_dict={x:batch_xs, y:batch_ys})
                     dev_accs.append(dev_acc)
                     dev_gold.extend(batch_ys)
@@ -88,14 +88,14 @@ with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options,log_device_placeme
     test_preds=[]
     test_gold = []
     for j in range(len(test_data)//batch_size):
-        batch_xs, batch_ys = get_batch(test_data, j, batch_size)
+        batch_xs, batch_ys = get_batch(test_data, j*batch_size, batch_size)
         test_acc,test_pred= sess.run([accuracy,y_hat], feed_dict={x:batch_xs, y:batch_ys})
         test_accs.append(test_acc)
         test_preds.extend(test_pred.tolist())
         test_gold.extend(batch_ys)
     print('Test: ' ,np.mean(test_accs) )
 
-    
+
 
     test_preds=np.asarray(test_preds)
 
@@ -114,9 +114,11 @@ with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options,log_device_placeme
     fpr = dict()
     tpr = dict()
     roc_auc = dict()
+
     for i in range(num_classes):
-        fpr[i], tpr[i], _ = roc_curve(np.equal(test_gold,i), test_preds[:, i], drop_intermediate=False)
+        fpr[i], tpr[i], _ = roc_curve(np.equal(test_gold,i, dtype=int), test_preds[:, i], drop_intermediate=False)
         roc_auc[i] = auc(fpr[i], tpr[i])
+
 
     plt.figure()
     lw = 2
@@ -138,7 +140,7 @@ with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options,log_device_placeme
         plt.plot(fpr[c], tpr[c],
              lw=lw, label='{:} (area = {:0.2f})'.format( seq_classes_rev[c], roc_auc[c]))
     plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
-    plt.xlim([0.0, 0.001])
+    plt.xlim([0.0, 0.1])
     plt.ylim([0.0, 1.05])
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
@@ -146,8 +148,6 @@ with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options,log_device_placeme
     plt.legend(loc="lower right")
     # plt.show()
 
-    print(fpr[1])
-    print(tpr[1])
 
     import itertools
     plt.figure()

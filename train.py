@@ -20,7 +20,7 @@ configs={
     # 'embed_4': {'embed': 4, 'conv':None, 'rnn_depth':3},
     # 'embed_4_conv4': {'embed': 4, 'conv':4, 'rnn_depth':3}
     # 'embed_8_conv8': {'embed': 8, 'conv':8, 'rnn_depth':2}
-    'embed_4_depth1': {'embed': 4, 'conv':None, 'rnn_depth':1},
+    # 'embed_4_depth1': {'embed': 4, 'conv':None, 'rnn_depth':1},
     'embed_4_depth2': {'embed': 4, 'conv':None, 'rnn_depth':2},
     # 'oh_depth1': {'embed': None, 'conv':None, 'rnn_depth':1},
     # 'oh_depth2': {'embed': None, 'conv':None, 'rnn_depth':2}
@@ -62,14 +62,14 @@ for model_id, cfg in configs.items():
                     if i % 50 ==0:
                         dev_accs =[]
                         for j in range(len(dev_data)//batch_size):
-                            batch_xs, batch_ys = get_batch(dev_data, j, batch_size)
+                            batch_xs, batch_ys = get_batch(dev_data, j*batch_size, batch_size)
                             dev_acc,pred= sess.run([accuracy,y_hat], feed_dict={x:batch_xs, y:batch_ys})
                             dev_accs.append(dev_acc)
                         # print(e,i,this_loss,this_acc,np.mean(dev_accs) )
                         # print(pred, batch_ys)
                         # print(batch_xs)
                         if np.mean(dev_accs) > best_dev_acc:
-                            print('New best of {}! Saving'.format(np.mean(dev_accs)))
+                            print('New best of {}! Saving ({})'.format(np.mean(dev_accs), np.mean(this_acc)))
                             if not os.path.exists(chkpt_path):
                                 os.makedirs(chkpt_path)
                             saver.save(sess, chkpt_path+'/model.checkpoint')
