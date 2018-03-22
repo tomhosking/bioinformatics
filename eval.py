@@ -29,11 +29,13 @@ num_attempts = 3
 to_restore=False
 results={name:{} for name in configs.keys()}
 
+
+
 if False:
     for model_id, cfg in configs.items():
         for attempt in range(0,num_attempts):
             tf.reset_default_graph()
-            x,y,opt, accuracy, y_hat, loss, embedding_encoder,dropout_active = build_graph(cfg['embed'], cfg['conv'], cfg['rnn_depth'])
+            x,y,opt, accuracy, y_hat, loss, embedding_encoder,_,dropout_active = build_graph(cfg['embed'], cfg['conv'], cfg['rnn_depth'])
             chkpt_path='./models/'+ model_id +'-'+str(attempt)
             gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.95)
             with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options,log_device_placement=False)) as sess:
@@ -63,7 +65,7 @@ if False:
                     dev_preds.extend(dev_pred.tolist())
                 print('Dev: ', np.mean(dev_accs) )
 
-test_data = dev_data
+# test_data = train_data
 
 model_id='embed_4'
 attempt=2
@@ -72,7 +74,7 @@ gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.95)
 tf.reset_default_graph()
 with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options,log_device_placement=False)) as sess:
     chkpt_path='./models/'+ model_id +'-'+str(attempt)
-    x,y,opt, accuracy, y_hat, loss, embedding_encoder,dropout_active = build_graph(cfg['embed'], cfg['conv'], cfg['rnn_depth'])
+    x,y,opt, accuracy, y_hat, loss, embedding_encoder,rnn_out,dropout_active = build_graph(cfg['embed'], cfg['conv'], cfg['rnn_depth'])
 
     saver = tf.train.Saver()
 
@@ -93,6 +95,8 @@ with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options,log_device_placeme
         test_gold.extend(batch_ys)
     print('Test: ' ,np.mean(test_accs) )
 
+    
+
     test_preds=np.asarray(test_preds)
 
     # eval blind data
@@ -111,7 +115,7 @@ with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options,log_device_placeme
     tpr = dict()
     roc_auc = dict()
     for i in range(num_classes):
-        fpr[i], tpr[i], _ = roc_curve(np.equal(test_gold,i), test_preds[:, i])
+        fpr[i], tpr[i], _ = roc_curve(np.equal(test_gold,i), test_preds[:, i], drop_intermediate=False)
         roc_auc[i] = auc(fpr[i], tpr[i])
 
     plt.figure()
@@ -128,22 +132,22 @@ with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options,log_device_placeme
     plt.legend(loc="lower right")
     # plt.show()
 
-    # plt.figure()
-    # lw = 2
-    # for c in range(num_classes):
-    #     plt.plot(fpr[c], tpr[c],
-    #          lw=lw, label='{:} (area = {:0.2f})'.format( seq_classes_rev[c], roc_auc[c]))
-    # plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
-    # plt.xlim([0.0, 0.01])
-    # plt.ylim([0.0, 1.05])
-    # plt.xlabel('False Positive Rate')
-    # plt.ylabel('True Positive Rate')
-    # # plt.title('Receiver operating characteristic example')
-    # plt.legend(loc="lower right")
-    # # plt.show()
-    #
-    # print(fpr[1])
-    # print(tpr[1])
+    plt.figure()
+    lw = 2
+    for c in range(num_classes):
+        plt.plot(fpr[c], tpr[c],
+             lw=lw, label='{:} (area = {:0.2f})'.format( seq_classes_rev[c], roc_auc[c]))
+    plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+    plt.xlim([0.0, 0.001])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    # plt.title('Receiver operating characteristic example')
+    plt.legend(loc="lower right")
+    # plt.show()
+
+    print(fpr[1])
+    print(tpr[1])
 
     import itertools
     plt.figure()
@@ -194,5 +198,22 @@ with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options,log_device_placeme
           print('Please install sklearn, matplotlib, and scipy to show embeddings.')
           print(ex)
 
+    # visualise representations of sequences
+    # plt.figure()
+    # tsne = TSNE(perplexity=30, n_components=2, init='pca', n_iter=1000,early_exaggeration=2)
+    # representations=[]
+    # labels=[]
+    # for j in range(len(train_data)//batch_size):
+    #     batch_xs, _ = get_batch(train_data, j, batch_size)
+    #     this_rep = sess.run(rnn_out, feed_dict={x:batch_xs})
+    #     representations.extend(this_rep.tolist())
+    #     labels.extend(batch_ys)
+    # rep_arr = np.asarray(representations)
+    # print(rep_arr.shape)
+    # low_dim_reps = tsne.fit_transform(rep_arr)
+    # colors=['red','blue','green','orange']
+    # # print(low_dim_reps)
+    # for i,label in enumerate(labels):
+    #     plt.scatter(x=low_dim_reps[i,0],y=low_dim_reps[i,1], c=colors[label],s=1)
 
     plt.show()

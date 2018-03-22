@@ -16,12 +16,12 @@ from model import build_graph, num_epochs, batch_size
 os.environ["CUDA_VISIBLE_DEVICES"]="3"
 
 configs={
-    'oh': {'embed': None, 'conv':None, 'rnn_depth':3},
-    'embed_4': {'embed': 4, 'conv':None, 'rnn_depth':3},
-    'embed_4_conv4': {'embed': 4, 'conv':4, 'rnn_depth':3}
-    'embed_8_conv8': {'embed': 8, 'conv':8, 'rnn_depth':2}
-    # 'embed_4_conv4_depth1': {'embed': 4, 'conv':4, 'rnn_depth':1},
-    # 'embed_4_conv4_depth2': {'embed': 4, 'conv':4, 'rnn_depth':2},
+    # 'oh': {'embed': None, 'conv':None, 'rnn_depth':3},
+    # 'embed_4': {'embed': 4, 'conv':None, 'rnn_depth':3},
+    # 'embed_4_conv4': {'embed': 4, 'conv':4, 'rnn_depth':3}
+    # 'embed_8_conv8': {'embed': 8, 'conv':8, 'rnn_depth':2}
+    'embed_4_depth1': {'embed': 4, 'conv':None, 'rnn_depth':1},
+    'embed_4_depth2': {'embed': 4, 'conv':None, 'rnn_depth':2},
     # 'oh_depth1': {'embed': None, 'conv':None, 'rnn_depth':1},
     # 'oh_depth2': {'embed': None, 'conv':None, 'rnn_depth':2}
 }
@@ -34,7 +34,7 @@ for model_id, cfg in configs.items():
         print('Training: '+ model_id + ' #'+str(attempt))
         tf.reset_default_graph()
 
-        x,y,opt, accuracy, y_hat, loss, embedding_encoder,dropout_active = build_graph(cfg['embed'], cfg['conv'], cfg['rnn_depth'])
+        x,y,opt, accuracy, y_hat, loss, embedding_encoder,_,dropout_active = build_graph(cfg['embed'], cfg['conv'], cfg['rnn_depth'])
 
         chkpt_path='./models/'+ model_id +'-'+str(attempt)
 

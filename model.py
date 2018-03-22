@@ -88,10 +88,10 @@ def build_graph(embedding_size=None, num_conv_filters=None, rnn_depth=2):
       cell, cell_bw, x_out, x_len, dtype=tf.float32)
 
     # get last output, pass through relu
-    last_output = lrelu(tf.layers.dropout(last_relevant(tf.concat(outputs, 2), length=x_len), rate=dropout_rate, training=dropout_active))
+    last_output = tf.layers.dropout(last_relevant(tf.concat(outputs, 2), length=x_len), rate=dropout_rate, training=dropout_active)
 
     # pass through relu and FC layers
-    h1 = lrelu(tf.layers.dropout(tf.matmul(last_output, W_h1) + b_h1, rate=dropout_rate, training=dropout_active))
+    h1 = lrelu(tf.layers.dropout(tf.matmul(lrelu(last_output), W_h1) + b_h1, rate=dropout_rate, training=dropout_active))
     logits = tf.matmul(h1, W_out) + b_out
 
     y_hat = tf.nn.softmax(logits)
@@ -114,4 +114,4 @@ def build_graph(embedding_size=None, num_conv_filters=None, rnn_depth=2):
     y_hat_oh = tf.argmax(y_hat,axis=1)
     accuracy = tf.reduce_mean(tf.cast(tf.equal(y_hat_oh,y), tf.float32))
 
-    return x,y,opt, accuracy, y_hat, loss, embedding_encoder,dropout_active
+    return x,y,opt, accuracy, y_hat, loss, embedding_encoder,last_output,dropout_active
