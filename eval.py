@@ -16,14 +16,16 @@ from model import build_graph, batch_size
 os.environ["CUDA_VISIBLE_DEVICES"]="2"
 
 configs={
-    'oh': {'embed': None, 'conv':None, 'rnn_depth':3},
-    'embed_4': {'embed': 4, 'conv':None, 'rnn_depth':3},
-    'embed_4_conv4': {'embed': 4, 'conv':4, 'rnn_depth':3}
+    # 'oh': {'embed': None, 'conv':None, 'rnn_depth':3},
+    # 'embed_4': {'embed': 4, 'conv':None, 'rnn_depth':3},
+    # 'embed_4_conv4': {'embed': 4, 'conv':4, 'rnn_depth':3}
     # 'embed_8_conv8': {'embed': 8, 'conv':8, 'rnn_depth':2}
     # 'embed_4_conv4_depth1': {'embed': 4, 'conv':4, 'rnn_depth':1},
     # 'embed_4_conv4_depth2': {'embed': 4, 'conv':4, 'rnn_depth':2},
     # 'oh_depth1': {'embed': None, 'conv':None, 'rnn_depth':1},
     # 'oh_depth2': {'embed': None, 'conv':None, 'rnn_depth':2}
+
+    'embed_4_depth2': {'embed': 4, 'conv':None, 'rnn_depth':2}
 }
 num_attempts = 3
 to_restore=False
@@ -65,10 +67,10 @@ if False:
                     dev_preds.extend(dev_pred.tolist())
                 print('Dev: ', np.mean(dev_accs) )
 
-# test_data = train_data
+# test_data = dev_data
 
-model_id='embed_4'
-attempt=2
+model_id='embed_4_depth2'
+attempt=1
 cfg = configs[model_id]
 gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.95)
 tf.reset_default_graph()
@@ -127,7 +129,7 @@ with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options,log_device_placeme
              lw=lw, label='{:} (area = {:0.2f})'.format( seq_classes_rev[c], roc_auc[c]))
     plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
     plt.xlim([0.0, 1.0])
-    plt.ylim([0.0, 1.05])
+    plt.ylim([0.0, 1.0])
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
     # plt.title('Receiver operating characteristic example')
@@ -140,15 +142,15 @@ with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options,log_device_placeme
         plt.plot(fpr[c], tpr[c],
              lw=lw, label='{:} (area = {:0.2f})'.format( seq_classes_rev[c], roc_auc[c]))
     plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
-    plt.xlim([0.0, 0.1])
-    plt.ylim([0.0, 1.05])
+    plt.xlim([0.0, 0.05])
+    plt.ylim([0.0, 1.0])
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
     # plt.title('Receiver operating characteristic example')
     plt.legend(loc="lower right")
     # plt.show()
 
-
+    ordered_classes = [0,2,1,3]
     import itertools
     plt.figure()
     cm=confusion_matrix(test_gold, np.argmax(test_preds,axis=1))

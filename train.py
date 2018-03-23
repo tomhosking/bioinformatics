@@ -1,5 +1,5 @@
 from loader import load_data, seq_classes, seq_tokens
-import json,random,os
+import json,random,os,time
 import loader
 
 import numpy as np
@@ -21,14 +21,16 @@ configs={
     # 'embed_4_conv4': {'embed': 4, 'conv':4, 'rnn_depth':3}
     # 'embed_8_conv8': {'embed': 8, 'conv':8, 'rnn_depth':2}
     # 'embed_4_depth1': {'embed': 4, 'conv':None, 'rnn_depth':1},
-    'embed_4_depth2': {'embed': 4, 'conv':None, 'rnn_depth':2},
+    # 'embed_4_depth1_batch8': {'embed': 4, 'conv':None, 'rnn_depth':1},
+    'embed_4_depth3_batch32_epoch20': {'embed': 4, 'conv':None, 'rnn_depth':2},
+    # 'embed_4_depth3_batch8': {'embed': 4, 'conv':None, 'rnn_depth':3},
     # 'oh_depth1': {'embed': None, 'conv':None, 'rnn_depth':1},
     # 'oh_depth2': {'embed': None, 'conv':None, 'rnn_depth':2}
 }
 num_attempts = 3
 to_restore=False
 results={name:{} for name in configs.keys()}
-
+start=time.time()
 for model_id, cfg in configs.items():
     for attempt in range(0,num_attempts):
         print('Training: '+ model_id + ' #'+str(attempt))
@@ -49,6 +51,8 @@ for model_id, cfg in configs.items():
             best_dev_acc=0
 
             for e in range(num_epochs):
+                print('Epoch ', e, time.time()-start)
+                start=time.time()
                 i=0
                 # random.shuffle(train_data)
                 while (i+1)*batch_size < len(train_data):
